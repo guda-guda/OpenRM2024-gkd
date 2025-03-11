@@ -57,7 +57,10 @@ public:
 
 double solveYawPnP(
     const double yaw,
-    Camera* camera,
+    cv::Mat intrinsic_matrix,
+    cv::Mat distortion_coeffs,
+    Eigen::Matrix4d Trans_pnp2head,
+    Eigen::Matrix3d Rotate_pnp2head,
     Eigen::Vector4d& ret_pose,
     const std::vector<cv::Point3f>& object_points,
     const std::vector<cv::Point2f>& image_points,

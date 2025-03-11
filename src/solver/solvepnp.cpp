@@ -9,11 +9,14 @@ using namespace std;
 
 static double ANGLE_COST_RATIO = 4.0;
 
-//TODO
+//CHANGELOG
 //移除Camera* camera项，直接设置intrinsic_matrix、distortion_coeffs、Rotate_pnp2head、Trans_pnp2head
 double rm::solveYawPnP(
     const double yaw,
-    Camera* camera,
+    cv::Mat intrinsic_matrix,
+    cv::Mat distortion_coeffs,
+    Eigen::Matrix4d Trans_pnp2head,
+    Eigen::Matrix3d Rotate_pnp2head,
     Eigen::Vector4d& ret_pose,
     const std::vector<cv::Point3f>& object_points,
     const std::vector<cv::Point2f>& image_points,
@@ -23,7 +26,7 @@ double rm::solveYawPnP(
     bool display_flag
 ) {
     ret_pose = Eigen::Vector4d(0, 0, 0, 1);
-    if (camera == nullptr) return 0.0;
+    // if (camera == nullptr) return 0.0;
     YawPnP* yaw_pnp = new YawPnP();
 
     // 设置yaw
@@ -39,11 +42,11 @@ double rm::solveYawPnP(
 
     // 使用OpenCV求解PnP
     cv::solvePnP(object_points, image_points, 
-                 camera->intrinsic_matrix, camera->distortion_coeffs, 
+                 intrinsic_matrix, distortion_coeffs, 
                  rvec, tvec, false, cv::SOLVEPNP_IPPE);
 
     // 计算装甲板位姿，确定返回值
-    Eigen::Matrix4d trans_pnp2head = camera->Trans_pnp2head;
+    Eigen::Matrix4d trans_pnp2head = Trans_pnp2head;
     yaw_pnp->T = trans_head2world * trans_pnp2head;
     yaw_pnp->T_inv = yaw_pnp->T.inverse();
 
@@ -52,7 +55,7 @@ double rm::solveYawPnP(
     yaw_pnp->pose = ret_pose;
 
     // 计算装甲板仰角
-    Eigen::Matrix3d rotate_pnp2head = camera->Rotate_pnp2head;
+    Eigen::Matrix3d rotate_pnp2head = Rotate_pnp2head;
     cv::Rodrigues(rvec, rotate_cv);
     rm::tf_Mat3d(rotate_cv, rotate_pnp);
     rotate_world = rotate_head2world * rotate_pnp2head * rotate_pnp;
@@ -67,7 +70,7 @@ double rm::solveYawPnP(
     }
 
     // 设置相机内参
-    tf_Mat3f(camera->intrinsic_matrix, yaw_pnp->Kc);
+    tf_Mat3f(intrinsic_matrix, yaw_pnp->Kc);
 
     if (display_flag) {
         displayYawPnP(yaw_pnp);
