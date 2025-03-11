@@ -9,6 +9,8 @@ using namespace std;
 
 static double ANGLE_COST_RATIO = 4.0;
 
+//TODO
+//移除Camera* camera项，直接设置intrinsic_matrix、distortion_coeffs、Rotate_pnp2head、Trans_pnp2head
 double rm::solveYawPnP(
     const double yaw,
     Camera* camera,
