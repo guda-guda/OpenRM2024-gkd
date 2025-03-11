@@ -25,7 +25,7 @@
 #include <structure/camera.hpp>
 #include <structure/shm.hpp>
 
-#include <tensorrt/tensorrt.h>
+// #include <tensorrt/tensorrt.h>
 
 #include <uniterm/uniterm.h>
 

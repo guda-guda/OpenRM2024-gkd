@@ -24,10 +24,10 @@ include_directories(${CERES_INCLUDE_DIRS})
 
 # CUDA
 find_package(CUDA)
-if (CUDA_FOUND)
-    message(STATUS "CUDA Version: ${CUDA_VERSION}")
-    include_directories(/usr/local/cuda/include)
-endif()
+# if (CUDA_FOUND)
+#     message(STATUS "CUDA Version: ${CUDA_VERSION}")
+#     include_directories(/usr/local/cuda/include)
+# endif()
 
 # 设置主版本号、次版本号和补丁版本号
 set(OPENRM_VERSION_MAJOR 1)
@@ -56,10 +56,10 @@ add_subdirectory(src/uniterm)
 add_subdirectory(src/utils)
 add_subdirectory(src/video)
 
-if (CUDA_FOUND)
-    add_subdirectory(src/tensorrt)
-    add_subdirectory(cuda)
-endif()
+# if (CUDA_FOUND)
+#     add_subdirectory(src/tensorrt)
+#     add_subdirectory(cuda)
+# endif()
 
 
 # 添加目标文件
@@ -77,8 +77,6 @@ if (CUDA_FOUND)
             openrm_timer
             openrm_uniterm
             openrm_video
-            openrm_tensorrt
-            openrm_cudatools
     )
 else()
     set(
@@ -118,14 +116,14 @@ install(
         include/openrm
 )
 
-if (CUDA_FOUND)
-    install(
-        FILES
-            ${CMAKE_SOURCE_DIR}/cuda/include/cudatools.h
-        DESTINATION
-            include/openrm
-    )
-endif()
+# if (CUDA_FOUND)
+#     install(
+#         FILES
+#             ${CMAKE_SOURCE_DIR}/cuda/include/cudatools.h
+#         DESTINATION
+#             include/openrm
+#     )
+# endif()
 
 install(
     DIRECTORY
@@ -147,7 +145,7 @@ include(CMakePackageConfigHelpers)
 
 if (CUDA_FOUND)
     configure_package_config_file(
-        ${CMAKE_SOURCE_DIR}/cmake/OpenRMConfig.cmake.in
+        ${CMAKE_SOURCE_DIR}/cmake/OpenRMConfig.cmake.in.nocuda
         ${CMAKE_CURRENT_BINARY_DIR}/OpenRMConfig.cmake
         INSTALL_DESTINATION
             lib/cmake/openrm

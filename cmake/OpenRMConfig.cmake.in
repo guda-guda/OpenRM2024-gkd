@@ -23,8 +23,5 @@ set(
         openrm::openrm_timer
 
         openrm::openrm_uniterm
-        
-        openrm::openrm_tensorrt
-        openrm::openrm_cudatools
 )
 
