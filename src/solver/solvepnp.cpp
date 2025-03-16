@@ -53,7 +53,19 @@ double rm::solveYawPnP(
     tvec.at<double>(1) = pose1;
     tvec.at<double>(2) = pose2;
 
+    //DEBUG 调换rvec坐标系
+    cv::Mat R = (cv::Mat_<double>(3,3) <<
+    0,  0,  1,
+   -1,  0,  0,
+    0, -1,  0);
+    cv::Mat oldR;
+    cv::Rodrigues(rvec, oldR);
+    cv::Mat newR = R * oldR;
+    cv::Rodrigues(newR, rvec);
+
+
     // 计算装甲板位姿，确定返回值
+    /*NEED DEBUG*/
     Eigen::Matrix4d trans_pnp2head = Trans_pnp2head;
     yaw_pnp->T = trans_head2world * trans_pnp2head;
     yaw_pnp->T_inv = yaw_pnp->T.inverse();
@@ -61,6 +73,22 @@ double rm::solveYawPnP(
     rm::tf_Vec4d(tvec, pose_pnp);
     ret_pose = yaw_pnp->T * pose_pnp;
     yaw_pnp->pose = ret_pose;
+    
+    if(false)
+    {
+        std::cout << "trans_pnp2head->" << trans_pnp2head << std::endl;
+        std::cout << "trans_head2world->" << trans_head2world << std::endl;
+        std::cout << "yaw_pnp->T->" << yaw_pnp->T << std::endl;
+        std::cout << "yaw_pnp->T_inv->" << yaw_pnp->T_inv << std::endl;
+        
+        std::cout << "tvec->" << tvec << std::endl;
+        std::cout << "pose_pnp->" << pose_pnp << std::endl;
+        std::cout << "ret_pose->" << ret_pose << std::endl;
+        
+        std::cout << "--------------------------------------" << std::endl;
+    }
+
+    
 
     // 计算装甲板仰角
     Eigen::Matrix3d rotate_pnp2head = Rotate_pnp2head;
