@@ -20,10 +20,11 @@ TrackQueueV4::TrackQueueV4(int count, double distance, double delay):
     distance_(distance),
     delay_(delay) {
     setMatrixQ(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1);
-    setMatrixR(0.1, 0.1, 0.1);
+    setMatrixR(1, 1, 1);
 }
 
 void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
+    pose_latest << input_pose[0], input_pose[1], input_pose[2], input_pose[3];
     std::unique_lock<std::mutex> lock(mtx_);
     Eigen::Matrix<double, 3, 1> pose;
     pose << input_pose[0], input_pose[1], input_pose[2];
@@ -117,7 +118,8 @@ void TrackQueueV4::getStateStr(std::vector<std::string>& str) {
 
 Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
     std::unique_lock<std::mutex> lock(mtx_);
-
+    
+    return Eigen::Matrix<double, 4, 1>(pose_latest[0], pose_latest[1], pose_latest[2], pose_latest[3]);
     TQstateV4* state = nullptr;
     if(last_state_ != nullptr) {
         double dt = getDoubleOfS(last_state_->last_t, getTime());

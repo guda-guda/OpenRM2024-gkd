@@ -88,6 +88,8 @@ private:
     double getDistance(
         const Eigen::Matrix<double, 3, 1>& this_pose,
         const Eigen::Matrix<double, 3, 1>& last_pose);                               // 两目标之间的距离
+        // DEBUG
+        Eigen::Matrix<double, 3, 1> pose_latest;
     
 private:
     int    count_        = 10;              // 可维持状态稳定的最小更新次数
