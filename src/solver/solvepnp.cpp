@@ -47,7 +47,7 @@ double rm::solveYawPnP(
 
     //DEBUG 调换tvec坐标系  (看起来是对的)
     double pose0 = tvec.at<double>(2);
-    double pose1 = -tvec.at<double>(0);
+    double pose1 = tvec.at<double>(0);
     double pose2 = -tvec.at<double>(1);
     tvec.at<double>(0) = pose0;
     tvec.at<double>(1) = pose1;
