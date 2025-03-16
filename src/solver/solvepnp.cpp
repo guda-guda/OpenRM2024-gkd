@@ -45,6 +45,14 @@ double rm::solveYawPnP(
                  intrinsic_matrix, distortion_coeffs, 
                  rvec, tvec, false, cv::SOLVEPNP_IPPE);
 
+    //DEBUG 调换tvec坐标系  (看起来是对的)
+    double pose0 = tvec.at<double>(2);
+    double pose1 = -tvec.at<double>(0);
+    double pose2 = -tvec.at<double>(1);
+    tvec.at<double>(0) = pose0;
+    tvec.at<double>(1) = pose1;
+    tvec.at<double>(2) = pose2;
+
     // 计算装甲板位姿，确定返回值
     Eigen::Matrix4d trans_pnp2head = Trans_pnp2head;
     yaw_pnp->T = trans_head2world * trans_pnp2head;
