@@ -1,6 +1,7 @@
 #include "utils/delay.h"
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 using namespace std;
 
 double rm::getFlyDelay(
@@ -30,6 +31,10 @@ double rm::getFlyDelay(
     const double target_y,
     const double target_z
 ) {
+    // std::cout << "yaw___in\t" << yaw << std::endl;
+    // std::cout << "pitch_in\t" << pitch << std::endl;
+
+
     yaw = atan2(target_y, target_x);
     double g = 9.8;
     double h = target_z;
@@ -46,6 +51,21 @@ double rm::getFlyDelay(
 
         t = d / (speed * cos(pitch));
     }
+    
+    // std::cout << "g\t" << g << std::endl;
+    // std::cout << "h\t" << h << std::endl;
+    // std::cout << "d\t" << d << std::endl;
+    // std::cout << "t\t" << t << std::endl;
+
+    // std::cout << "yaw___out\t" << yaw << std::endl;
+    // std::cout << "pitch_out\t" << pitch << std::endl;
+    // std::cout << "speed\t" << speed << std::endl;
+    // std::cout << "target_x\t" << target_x << std::endl;
+    // std::cout << "target_y\t" << target_y << std::endl;
+    // std::cout << "target_z\t" << target_z << std::endl;
+    // std::cout << "--------------------"<< std::endl;
+ 
+
     return t;
 }
 
