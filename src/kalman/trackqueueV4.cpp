@@ -27,7 +27,7 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
     pose_latest << input_pose[0] / 1000, input_pose[1] / 1000, input_pose[2] / 1000, input_pose[3];
     std::unique_lock<std::mutex> lock(mtx_);
     Eigen::Matrix<double, 3, 1> pose;
-    pose << input_pose[0], input_pose[1], input_pose[2];
+    pose << input_pose[0] / 1000.0, input_pose[1] / 1000.0, input_pose[2] / 1000.0;
 
     double min_distance = 1e4;
     TQstateV4* best_state = nullptr;
@@ -57,6 +57,20 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
                 best_state = state;
             }
         }
+    
+        if(true)
+        {
+            std::cout << "estimate 0 x \t" << state->model->estimate_X[0] << std::endl;
+            std::cout << "estimate 1 y \t" << state->model->estimate_X[1] << std::endl;
+            std::cout << "estimate 2 z \t" << state->model->estimate_X[2] << std::endl;
+            std::cout << "estimate 3 v \t" << state->model->estimate_X[3] << std::endl;
+            std::cout << "estimate 4 vz \t" << state->model->estimate_X[4] << std::endl;
+            std::cout << "estimate 5 angle \t" << state->model->estimate_X[5] << std::endl;
+            std::cout << "min distance \t" << min_distance << std::endl;
+            std::cout << "distance_ \t" << distance_ << std::endl;
+            std::cout << "-------------------------------" << std::endl;
+        }
+            
     }
 
     if (best_state == nullptr || min_distance > distance_) {
