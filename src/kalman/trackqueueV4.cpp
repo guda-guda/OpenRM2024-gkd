@@ -24,7 +24,7 @@ TrackQueueV4::TrackQueueV4(int count, double distance, double delay):
 }
 
 void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
-    pose_latest << input_pose[0], input_pose[1], input_pose[2], input_pose[3];
+    pose_latest << input_pose[0] / 1000, input_pose[1] / 1000, input_pose[2] / 1000, input_pose[3];
     std::unique_lock<std::mutex> lock(mtx_);
     Eigen::Matrix<double, 3, 1> pose;
     pose << input_pose[0], input_pose[1], input_pose[2];

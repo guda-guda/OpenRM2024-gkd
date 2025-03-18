@@ -73,6 +73,15 @@ double rm::solveYawPnP(
     rm::tf_Vec4d(tvec, pose_pnp);
     ret_pose = yaw_pnp->T * pose_pnp;
     yaw_pnp->pose = ret_pose;
+
+    //DEBUG mm -> m
+    // double npose1 = ret_pose[0] / 1000;
+    // double npose2 = ret_pose[1] / 1000;
+    // double npose3 = ret_pose[2] / 1000;
+    // ret_pose[0] = npose1;
+    // ret_pose[1] = npose2;
+    // ret_pose[2] = npose3;
+
     
     if(false)
     {
