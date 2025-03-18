@@ -24,7 +24,7 @@ TrackQueueV4::TrackQueueV4(int count, double distance, double delay):
 }
 
 void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
-    pose_latest << input_pose[0] / 1000, input_pose[1] / 1000, input_pose[2] / 1000, input_pose[3];
+    // pose_latest << input_pose[0] / 1000, input_pose[1] / 1000, input_pose[2] / 1000, input_pose[3];
     std::unique_lock<std::mutex> lock(mtx_);
     Eigen::Matrix<double, 3, 1> pose;
     pose << input_pose[0] / 1000.0, input_pose[1] / 1000.0, input_pose[2] / 1000.0;
@@ -45,7 +45,7 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
         } else {
             ++it; 
             double predict_x = state->model->estimate_X[0] + dt * state->model->estimate_X[3] * cos(state->model->estimate_X[5]);
-            double predict_y = state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]);
+            double predict_y = state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]);   // <- PROBLEM HERE estimate_X[5]
             double predict_z = state->model->estimate_X[2];
 
             Eigen::Matrix<double, 3, 1> predict_pose;
@@ -58,7 +58,7 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
             }
         }
     
-        if(true)
+        if(false)
         {
             std::cout << "estimate 0 x \t" << state->model->estimate_X[0] << std::endl;
             std::cout << "estimate 1 y \t" << state->model->estimate_X[1] << std::endl;
@@ -67,7 +67,10 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
             std::cout << "estimate 4 vz \t" << state->model->estimate_X[4] << std::endl;
             std::cout << "estimate 5 angle \t" << state->model->estimate_X[5] << std::endl;
             std::cout << "min distance \t" << min_distance << std::endl;
-            std::cout << "distance_ \t" << distance_ << std::endl;
+            std::cout << "predict_x \t" << state->model->estimate_X[0] + dt * state->model->estimate_X[3] * cos(state->model->estimate_X[5]) << std::endl;
+            std::cout << "predict_y \t" << state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]) << std::endl;
+            std::cout << "predict_z \t" << state->model->estimate_X[2] << std::endl;
+            std::cout << "dt \t" << dt << std::endl;
             std::cout << "-------------------------------" << std::endl;
         }
             
@@ -133,7 +136,7 @@ void TrackQueueV4::getStateStr(std::vector<std::string>& str) {
 Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
     std::unique_lock<std::mutex> lock(mtx_);
     
-    return Eigen::Matrix<double, 4, 1>(pose_latest[0], pose_latest[1], pose_latest[2], pose_latest[3]);
+    // return Eigen::Matrix<double, 4, 1>(pose_latest[0], pose_latest[1], pose_latest[2], pose_latest[3]);
     TQstateV4* state = nullptr;
     if(last_state_ != nullptr) {
         double dt = getDoubleOfS(last_state_->last_t, getTime());
@@ -166,7 +169,24 @@ Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
         double x = state->model->estimate_X[0] + dt * state->model->estimate_X[3] * cos(state->model->estimate_X[5]);
         double y = state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]);
         double z = state->model->estimate_X[2] + dt * state->model->estimate_X[4];
-    
+        
+        if(false)
+        {
+            std::cout << "estimate 0 x \t" << state->model->estimate_X[0] << std::endl;
+            std::cout << "estimate 1 y \t" << state->model->estimate_X[1] << std::endl;
+            std::cout << "estimate 2 z \t" << state->model->estimate_X[2] << std::endl;
+            std::cout << "estimate 3 v \t" << state->model->estimate_X[3] << std::endl;
+            std::cout << "estimate 4 vz \t" << state->model->estimate_X[4] << std::endl;
+            std::cout << "estimate 5 angle \t" << state->model->estimate_X[5] << std::endl;
+            std::cout << "predict_x \t" << state->model->estimate_X[0] + dt * state->model->estimate_X[3] * cos(state->model->estimate_X[5]) << std::endl;
+            std::cout << "predict_y \t" << state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]) << std::endl;
+            std::cout << "predict_z \t" << state->model->estimate_X[2] << std::endl;
+            std::cout << "dt \t" << dt << std::endl;                        // <- PROBLEM abnormal large dt
+            std::cout << "sys_delay \t" << sys_delay << std::endl;     
+            std::cout << "append_delay \t" << append_delay << std::endl;    // <- PROBLEM abnormal append_delay -> large dt
+            std::cout << "-------------------------------" << std::endl;
+        }
+
         return Eigen::Matrix<double, 4, 1>(x, y, z, 0);
     } else {
         return Eigen::Matrix<double, 4, 1>::Zero();
