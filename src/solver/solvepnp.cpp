@@ -69,9 +69,11 @@ double rm::solveYawPnP(
     Eigen::Matrix4d trans_pnp2head = Trans_pnp2head;
     yaw_pnp->T = trans_head2world * trans_pnp2head;
     yaw_pnp->T_inv = yaw_pnp->T.inverse();
-
+    
+    //先不在这里做坐标系转换，而是直接输出相对相机的位置
     rm::tf_Vec4d(tvec, pose_pnp);
-    ret_pose = yaw_pnp->T * pose_pnp;
+    // ret_pose = yaw_pnp->T * pose_pnp;
+    ret_pose = pose_pnp;
     yaw_pnp->pose = ret_pose;
 
     //DEBUG mm -> m
