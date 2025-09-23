@@ -94,6 +94,26 @@ void AntitopV3::push(const Eigen::Matrix<double, 4, 1>& pose, TimePoint t) {
     center_funcA_.dt = dt;
     center_model_.predict(center_funcA_);
     center_model_.update(center_funcH_, pose_center);
+    
+    if (update_num_ > 20 && (update_num_ % 5 == 0)) {
+        // 预测未来0.5秒的位置（可根据实际需求调整延迟）
+        double predict_delay = 0.5;
+        EKF_predict(pose, t, predict_delay);  // 调用预测函数
+        // 记录预测的目标时间（当前时间 + 预测延迟）
+        predicted_target_time_ = t + predict_delay;
+    }
+
+    // 当当前时间达到预测的目标时间，且存在有效预测结果时，计算误差
+    if (has_predicted_future_ && (t >= predicted_target_time_)) {
+        // 用当前传入的pose（YOLO实测值）计算误差
+        double error = Future_PredictError(pose);
+        /*
+        if (error > 0.3) {  // 若误差过大（如超过0.3米），增大过程噪声
+            model_.Q *= 1.2;
+        } else if (error < 0.1) {  // 误差较小时，减小过程噪声
+            model_.Q *= 0.9;
+        }*/
+    }
 
     rm::message("antitop count", (int)update_num_);
     rm::message("antitop toggle", toggle_);
@@ -253,7 +273,7 @@ bool AntitopV3::getFireCenter(const Eigen::Matrix<double, 4, 1>& pose) {
 }
 
 //用getpose()预测ekf未来位置
-void EKF_predict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay){
+void AntitopV3::EKF_predict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay){
     // 用当前YOLO观测值更新EKF模型
     this->push(current_pose, current_time);
     predicted_future_pose_ = this->getPose(predict_delay);
@@ -262,8 +282,9 @@ void EKF_predict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint curr
 }
 
 //计算预测位置与实际位置的误差
-double Future_PredictError(const Eigen::Matrix<double, 4, 1>& future_pose){
+double AntitopV3::Future_PredictError(const Eigen::Matrix<double, 4, 1>& future_pose){
     if(!has_predicted_future_){
+        rm::message("No valid prediction to calculate error");
         return -1.0;
     }
     double error = sqrt(pow(predicted_future_pose_[0] - future_pose[0], 2) + pow(predicted_future_pose_[1] - future_pose[1], 2) + pow(predicted_future_pose_[2] - future_pose[2], 2));

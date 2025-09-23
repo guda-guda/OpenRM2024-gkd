@@ -311,3 +311,26 @@ bool TrackQueueV2::isFireValid(const Eigen::Matrix<double, 4, 1>& pose) {
     }
     return false;
 }
+
+Eva_error TrackQueueV2::carEvaluator(double dt , Eigen::Matrix<double, 4, 1>delay_actual_pose){
+    Eva_error error;
+    if(last_index_ == -1 ||!list_[last_index_].exist || dt<0 ||dt>delay_){
+        //没有上一次索引目标或者目标不存在，或者时间超过同一个目标的最大更新时间就无效
+        error.angle_error = -1.0;
+        error.pose_error = -1.0;
+        return error;
+    }
+    rm::Eva_error error;
+    //获取dt时间后的预测值
+    Eigen::Matrix<double, 4, 1>delay_predic_pose = getPose(dt);
+    //计算位姿偏差
+    double dx = delay_actual_pose(0) - delay_predic_pose(0);
+    double dy = delay_actual_pose(1) - delay_predic_pose(1);
+    double dz = delay_actual_pose(2) - delay_predic_pose(2);
+    error.pose_error = sqrt(dx*dx+dy*dy+dz*dz);
+
+    //计算角度偏差(绝对值计算)
+    error.angle_error = abs(delay_actual_pose(3) - delay_predic_pose(3));
+
+    return error;
+}

@@ -38,6 +38,11 @@ struct TrackQueueV2_FuncH {
     }
 };
 
+struct Eva_error{
+    double pose_error;
+    double angle_error;
+};
+
 class TQstateV2 {
 public:
     TimePoint last_t;                       // 目标上一次的时间
@@ -120,7 +125,8 @@ public:
     bool isStdStable();                                                              // 判断参数拟合标准差是否稳定
     bool isFireValid(const Eigen::Matrix<double, 4, 1>& pose);                       // 判断是否满足开火条件
 
-
+    
+    Eva_error carEvaluator(double dt , Eigen::Matrix<double, 4, 1>delay_actual_pose);//新增回测函数
 
 private:
     double getDistance(

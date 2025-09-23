@@ -84,6 +84,8 @@ struct AntitopV3_OmegaFuncH {
 
 
 
+
+
 // AntitopV1类
 // 使用基于扩展卡尔曼的中心预测模型
 class AntitopV3 {
@@ -96,8 +98,8 @@ public:
     void push(const Eigen::Matrix<double, 4, 1>& pose, TimePoint t);
     Eigen::Matrix<double, 4, 1> getPose(double append_delay);
     Eigen::Matrix<double, 4, 1> getCenter(double append_delay);
-    void EKF_predict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay); //用于预测未来位姿的函数
-    double Future_PredictError(const Eigen::Matrix<double, 4, 1>& future_pose); //用于计算预测误差的函数,返回欧氏距离；
+    void EKFpredict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay); //用于预测未来位姿的函数
+    double FuturePredictError(const Eigen::Matrix<double, 4, 1>& future_pose); //用于计算预测误差的函数,返回欧氏距离；
 
     void setMatrixQ(double, double, double, double, double, double, double, double, double);
     void setMatrixR(double, double, double, double);
@@ -120,7 +122,8 @@ public:
     bool   getFireCenter(const Eigen::Matrix<double, 4, 1>& pose);
 
 private:
-    double getSafeSub(const double, const double);                  // 角度安全减法
+    std::vector<PredictionComparison> error_log_;                   // 存储多组对比结果
+    double getSafeSub(const double, const double);                  // 角度安全减法 
     double getAngleTrans(const double, const double);               // 将模型内角度转换为接近新角度
     double getAngleTrans(const double, const double, double);       // 将模型内角度转换为接近新角度，转换考虑预测
     double getAngleMin(const double, const double, const double);   // 获取角度最小值
@@ -131,6 +134,7 @@ private:
     Eigen::Matrix<double, 4, 1> predicted_future_pose_;             // 存储当前时刻用getpose()预测的未来位姿
     bool has_predicted_future_ = false;                             // 标记是否有有效的预测结果
     double current_predict_delay_ = 0.0;                            // 记录当前预测的延迟时间
+    TimePoint predicted_target_time_;                               // 预测的目标时间（当前时间 + 预测延迟）
 
     double   r_[2] = {0.25, 0.25};                                  // 两个位姿的半径
     double   z_[2] = {0, 0};                                        // 两个位姿的高度
