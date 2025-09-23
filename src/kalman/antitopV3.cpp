@@ -98,15 +98,15 @@ void AntitopV3::push(const Eigen::Matrix<double, 4, 1>& pose, TimePoint t) {
     if (update_num_ > 20 && (update_num_ % 5 == 0)) {
         // 预测未来0.5秒的位置（可根据实际需求调整延迟）
         double predict_delay = 0.5;
-        EKF_predict(pose, t, predict_delay);  // 调用预测函数
+        EKFPredict(pose, t, predict_delay);  // 调用预测函数
         // 记录预测的目标时间（当前时间 + 预测延迟）
-        predicted_target_time_ = t + predict_delay;
+        predicted_target_time_ = t + std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::duration<double>(predict_delay));
     }
 
     // 当当前时间达到预测的目标时间，且存在有效预测结果时，计算误差
     if (has_predicted_future_ && (t >= predicted_target_time_)) {
         // 用当前传入的pose（YOLO实测值）计算误差
-        double error = Future_PredictError(pose);
+        double error = FuturePredictError(pose);
         /*
         if (error > 0.3) {  // 若误差过大（如超过0.3米），增大过程噪声
             model_.Q *= 1.2;
@@ -273,7 +273,7 @@ bool AntitopV3::getFireCenter(const Eigen::Matrix<double, 4, 1>& pose) {
 }
 
 //用getpose()预测ekf未来位置
-void AntitopV3::EKF_predict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay){
+void AntitopV3::EKFPredict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay){
     // 用当前YOLO观测值更新EKF模型
     this->push(current_pose, current_time);
     predicted_future_pose_ = this->getPose(predict_delay);
@@ -282,13 +282,13 @@ void AntitopV3::EKF_predict(const Eigen::Matrix<double, 4, 1>& current_pose, Tim
 }
 
 //计算预测位置与实际位置的误差
-double AntitopV3::Future_PredictError(const Eigen::Matrix<double, 4, 1>& future_pose){
+double AntitopV3::FuturePredictError(const Eigen::Matrix<double, 4, 1>& future_pose){
     if(!has_predicted_future_){
         rm::message("No valid prediction to calculate error");
         return -1.0;
     }
     double error = sqrt(pow(predicted_future_pose_[0] - future_pose[0], 2) + pow(predicted_future_pose_[1] - future_pose[1], 2) + pow(predicted_future_pose_[2] - future_pose[2], 2));
-    double d_theta = fabs(getSafeSub(predicted_future_pose_[3], future_pose[3])) * 180 / M_PI;、
+    double d_theta = fabs(getSafeSub(predicted_future_pose_[3], future_pose[3])) * 180 / M_PI;
     rm::message("antitop predict delay", current_predict_delay_);
     rm::message("antitop predict error", error);
     rm::message("ekf_yolo_angle_error", d_theta);
