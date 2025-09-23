@@ -98,7 +98,7 @@ public:
     void push(const Eigen::Matrix<double, 4, 1>& pose, TimePoint t);
     Eigen::Matrix<double, 4, 1> getPose(double append_delay);
     Eigen::Matrix<double, 4, 1> getCenter(double append_delay);
-    void EKFpredict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay); //用于预测未来位姿的函数
+    void EKFPredict(const Eigen::Matrix<double, 4, 1>& current_pose, TimePoint current_time, double predict_delay); //用于预测未来位姿的函数
     double FuturePredictError(const Eigen::Matrix<double, 4, 1>& future_pose); //用于计算预测误差的函数,返回欧氏距离；
 
     void setMatrixQ(double, double, double, double, double, double, double, double, double);
@@ -122,7 +122,6 @@ public:
     bool   getFireCenter(const Eigen::Matrix<double, 4, 1>& pose);
 
 private:
-    std::vector<PredictionComparison> error_log_;                   // 存储多组对比结果
     double getSafeSub(const double, const double);                  // 角度安全减法 
     double getAngleTrans(const double, const double);               // 将模型内角度转换为接近新角度
     double getAngleTrans(const double, const double, double);       // 将模型内角度转换为接近新角度，转换考虑预测
