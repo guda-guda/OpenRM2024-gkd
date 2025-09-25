@@ -83,7 +83,9 @@ public:
     void getStateStr(std::vector<std::string>& str);                                 // 获取目标状态信息字符串
     bool getFireFlag();                                                              // 判断是否满足开火条件
 
-
+    /*新增*/
+    void cal_error(Eigen::Matrix<double, 4, 1>& view_pose, TimePoint t);            //计算误差
+    /*******************************/
 private:
     double getDistance(
         const Eigen::Matrix<double, 4, 1>& this_pose,
@@ -101,6 +103,15 @@ private:
 
     Eigen::Matrix<double, 11, 11> matrixQ_; // 运动模型的过程噪声协方差矩阵
     Eigen::Matrix<double, 4, 4> matrixR_;   // 运动模型的观测噪声协方差矩阵
+
+    /*新增********************************************/
+    double last_error_pose = -1.0;                //存储上一次的预测误差
+    double last_error_angle = -1.0;
+    Eigen::Matrix<double, 3, 1>last_predict_pose_3;   //存储上一次以last_state_为标准的预测位姿
+    Eigen::Matrix<double, 4, 1>last_predict_pose_4;
+    bool has_valid_predict = false;         //是否有有效的预测记录
+    double delay_time = 0.0;                //记录当前预测的延迟时间
+    /**************************************** */
 
 public:
     std::vector<TQstateV3*> list_;          // 目标状态列表

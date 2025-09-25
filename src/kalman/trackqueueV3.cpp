@@ -26,6 +26,13 @@ TrackQueueV3::TrackQueueV3(int count, double distance, double delay):
 void TrackQueueV3::push(Eigen::Matrix<double, 4, 1>& pose, TimePoint t) {
     std::unique_lock<std::mutex> lock(mtx_);
 
+    /*新增*/
+    //计算预测误差(如果存在有效的上一次预测状态)
+    if(last_state_!=nullptr && has_valid_predict){
+        cal_error(pose,t);
+    }
+    /*********************************************************/
+
     double min_distance = 1e4;
     TQstateV3* best_state = nullptr;
     
@@ -68,11 +75,19 @@ void TrackQueueV3::push(Eigen::Matrix<double, 4, 1>& pose, TimePoint t) {
         best_state->model->update(funcH_, pose);
 
         list_.push_back(best_state);
+
+        /*新增*/
+        has_valid_predict = false;
     } else {
         funcA_.dt = getDoubleOfS(best_state->last_t, t);
         best_state->refresh(pose, t);
         best_state->model->predict(funcA_);
         best_state->model->update(funcH_, pose);
+        
+        /*新增*/
+        if(last_state_!=nullptr){
+            has_valid_predict = true;
+        }
     }
 }
 
@@ -213,4 +228,25 @@ bool TrackQueueV3::getFireFlag() {
     double dt = getDoubleOfS(last_state_->last_t, getTime());
     if((last_state_->count > count_) && (dt < delay_)) return true;
     else return false;
+}
+
+/*新增函数*/
+void TrackQueueV3::cal_error(Eigen::Matrix<double, 4, 1>& view_pose, TimePoint t){
+    //计算延迟时间
+    delay_time =  getDoubleOfS(last_state_->last_t ,t);
+    //进行位置的预测
+    last_predict_pose_4 = getPose(delay_time);
+    if(last_predict_pose_4 == Eigen::Matrix<double, 4, 1>::Zero()){
+        std::cout<<"predict failed,has no state to predict.\n";
+    }
+    //计算当前观测与上一次预测之间的误差
+    double cur_error = getDistance(view_pose , last_predict_pose_4);
+    last_error_pose = cur_error;
+    last_error_angle = abs(view_pose[3] - last_predict_pose_4[3]);
+
+    //打印调试信息
+    rm::message("trackqueueV3 predict pos error:",last_error_pose);
+    rm::message("trackqueueV3 predict angle error:",last_error_angle);
+    rm::message("trackqueueV3 predict delay:",delay_time);
+
 }

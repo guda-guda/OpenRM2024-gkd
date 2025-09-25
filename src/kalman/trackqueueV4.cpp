@@ -24,20 +24,30 @@ TrackQueueV4::TrackQueueV4(int count, double distance, double delay):
 }
 
 void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
+    //将输入的毫米单位转换成米
     pose_latest << input_pose[0] / 1000, input_pose[1] / 1000, input_pose[2] / 1000, input_pose[3];
     std::unique_lock<std::mutex> lock(mtx_);
     Eigen::Matrix<double, 3, 1> pose;
     pose << input_pose[0] / 1000.0, input_pose[1] / 1000.0, input_pose[2] / 1000.0;
     // pose << input_pose[0], input_pose[1], input_pose[2];
 
+    /*新增*/
+    //计算预测误差(如果存在有效的上一次预测状态)
+    if(last_state_!=nullptr && has_valid_predict){
+        cal_error(pose,t);
+    }
+    /*********************************************************/
+
+
     double min_distance = 1e4;
     TQstateV4* best_state = nullptr;
     
+    //清理过期目标同时找到最好的观测目标
     for(auto it = list_.begin(); it != list_.end();) {
 
         TQstateV4* state = *it;
         double dt = getDoubleOfS(state->last_t, t);
-
+        //移除超过延迟时间或者keep计数为0的目标
         if((dt > delay_) || (state->keep <= 0)) {
             
             if(last_state_ == state) last_state_ = nullptr;
@@ -45,6 +55,7 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
             it = list_.erase(it);
         } else {
             ++it; 
+            //计算当前观测与所有现有目标预测位置的距离
             double predict_x = state->model->estimate_X[0] + dt * state->model->estimate_X[3] * cos(state->model->estimate_X[5]);
             double predict_y = state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]);   // <- PROBLEM HERE estimate_X[5]
             double predict_z = state->model->estimate_X[2];
@@ -53,6 +64,7 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
             predict_pose << predict_x, predict_y, predict_z, 1;
 
             double distance = getDistance(pose, predict_pose);
+            //找到移动距离最小的观测目标
             if(distance < min_distance) {
                 min_distance = distance;
                 best_state = state;
@@ -81,7 +93,8 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
     //mm -> m
     Eigen::Matrix<double, 4, 1> input_pose_m;
     input_pose_m << input_pose[0] / 1000, input_pose[1] / 1000, input_pose[2] / 1000, input_pose[3];
-
+    //如果距离超过阈值或者没有匹配目标，创建新目标
+    //否则更新匹配的目标状态
     if (best_state == nullptr || min_distance > distance_) {
         best_state = new TQstateV4();
         best_state->model->Q = matrixQ_;
@@ -93,11 +106,19 @@ void TrackQueueV4::push(Eigen::Matrix<double, 4, 1>& input_pose, TimePoint t) {
         best_state->model->update(funcH_, pose);
 
         list_.push_back(best_state);
+
+        /*新增,因为这里目标没有了，所以上一次依据last_state_为依据预测的有效位姿也没有用了*/
+        has_valid_predict = false;
+        /**/
     } else {
         funcA_.dt = getDoubleOfS(best_state->last_t, t);
         best_state->refresh(input_pose_m, t);
         best_state->model->predict(funcA_);
         best_state->model->update(funcH_, pose);
+        /*新增*/
+        if(last_state_!=nullptr){
+            has_valid_predict = true;
+        }
     }
 }
 
@@ -139,6 +160,7 @@ void TrackQueueV4::getStateStr(std::vector<std::string>& str) {
     }
 }
 
+//预测更新流程
 Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
     std::unique_lock<std::mutex> lock(mtx_);
     
@@ -152,14 +174,14 @@ Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
             last_state_ = nullptr;
         }
     } 
-
+    //若上一次没有状态
     if (last_state_ == nullptr) {
         int max_count = -1;
         for(auto it = list_.begin(); it != list_.end(); ++it) {
 
             double dt = getDoubleOfS((*it)->last_t, getTime());
             if((dt > delay_) || ((*it)->keep <= 0)) continue;
-
+            //选择更新次数最多且未过期的目标
             if((*it)->count > max_count) {
                 max_count = (*it)->count;
                 state = *it;
@@ -168,11 +190,12 @@ Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
     }
 
     if(state != nullptr) {
-        last_state_ = state;
+        last_state_ = state;//记录当前选择的目标状态
 
         double sys_delay = getDoubleOfS(state->last_t, getTime());
         // double dt = sys_delay + append_delay;
-        double dt = sys_delay;
+        double dt = sys_delay;//计算从上次观测到当前的时间差
+        //X,Y，Z轴的预测
         double x = state->model->estimate_X[0] + dt * state->model->estimate_X[3] * cos(state->model->estimate_X[5]);
         double y = state->model->estimate_X[1] + dt * state->model->estimate_X[3] * sin(state->model->estimate_X[5]);
         double z = state->model->estimate_X[2] + dt * state->model->estimate_X[4];
@@ -202,11 +225,13 @@ Eigen::Matrix<double, 4, 1> TrackQueueV4::getPose(double append_delay) {
         }
 
         return Eigen::Matrix<double, 4, 1>(x, y, z, 0);
+        //返回根据当前观测值预测出的四维向量
     } else {
         return Eigen::Matrix<double, 4, 1>::Zero();
     }
 }
 
+//获取最新预测值
 bool TrackQueueV4::getPose(Eigen::Matrix<double, 4, 1>& pose, TimePoint& t) {
     std::unique_lock<std::mutex> lock(mtx_);
 
@@ -268,4 +293,26 @@ bool TrackQueueV4::getFireFlag() {
     double dt = getDoubleOfS(last_state_->last_t, getTime());
     if((last_state_->count > count_) && (dt < delay_)) return true;
     else return false;
+}
+
+
+/*新增函数*/
+void TrackQueueV4::cal_error(Eigen::Matrix<double, 3, 1>& view_pose, TimePoint t){
+    //计算延迟时间
+    delay_time =  getDoubleOfS(last_state_->last_t ,t);
+    //进行位置的预测
+    last_predict_pose_4 = getPose(delay_time);
+    if(last_predict_pose_4 == Eigen::Matrix<double, 4, 1>::Zero()){
+        std::cout<<"predict failed,has no state to predict.\n";
+    }
+    last_predict_pose_3[0] = last_predict_pose_4[0];
+    last_predict_pose_3[1] = last_predict_pose_4[1];
+    last_predict_pose_3[2] = last_predict_pose_4[2];
+    //计算当前观测与上一次预测之间的误差
+    double cur_error = getDistance(view_pose , last_predict_pose_3);
+    last_error = cur_error;
+
+    //打印调试信息
+    rm::message("trackqueueV4 predict error:",last_error);
+    rm::message("trackqueueV4 predict delay:",delay_time);
 }
