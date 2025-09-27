@@ -11,7 +11,8 @@ int main(int argc, char** argv) {
     bool oscilloscope_flag = false;
     bool monitor_flag = false;
     std::vector<std::string> arg_strs;
-    std::vector<std::string> key_name{"autoaim", "camsense", "radar"};
+    std::vector<std::string> key_name{"autoaim", "camsense", "radar","antitop predict delay","antitop predict error","ekf_yolo_angle_error",
+                                       "trackqueueV4 predict error:","trackqueueV4 predict delay:"};
     
     while ((option = getopt(argc, argv, "dhimov")) != -1) {
         switch (option) {

@@ -95,6 +95,7 @@ void AntitopV3::push(const Eigen::Matrix<double, 4, 1>& pose, TimePoint t) {
     center_model_.predict(center_funcA_);
     center_model_.update(center_funcH_, pose_center);
     
+    //当更新次数大于20且每隔5次时，进行未来位置预测，之所以要在更新次数大于20次之后才进行，是为了确保模型已经有了一定的稳定性
     if (update_num_ > 20 && (update_num_ % 5 == 0)) {
         // 预测未来0.5秒的位置（可根据实际需求调整延迟）
         double predict_delay = 0.5;
